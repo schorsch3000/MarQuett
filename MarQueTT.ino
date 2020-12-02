@@ -2,12 +2,12 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid = "***REMOVED***";
-const char* password = "***REMOVED***";
-const char* mqtt_server = "***REMOVED***.de";
+const char* ssid = "";
+const char* password = "";
+const char* mqtt_server = "";
 const int mqtt_port = 1883;
-const char* mqtt_user = "***REMOVED***";
-const char* mqtt_password = "***REMOVED***";
+const char* mqtt_user = "";
+const char* mqtt_password = "";
 const int LEDMATRIX_SEGMENTS = 4;
 const uint8_t LEDMATRIX_CS_PIN = D4;
 char text[4096];
@@ -30,7 +30,7 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
-  //client.connect("***REMOVED***Client", mqtt_user, mqtt_password);
+  //client.connect("c3reClient", mqtt_user, mqtt_password);
   for (int i = 0; i < sizeof(text); i++) {
     text[i] = initialText[i];
   }
