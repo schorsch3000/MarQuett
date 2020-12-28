@@ -1,9 +1,15 @@
+
+// local configuration -- copy this to local_config.h and change to your needs.
+
 const char* ssid = "";                                                      // Name of the SSID to connect to
 const char* password = "";                                                  // Password used to connect to your wifi
 
 const char* mqtt_server = "";                                               // Hostname or IP of mqtt-Server
 const char* mqtt_username = "";                                             // Username used to connect to MQTT-Server, leave empty if unused
 const char* mqtt_password = "";                                             // Password used to connect to MQTT-Server, leave empty if unused
+
+// you may change the default topic root "ledMatrix" to something different here
+//#define TOPICROOT "ledMatrix"
 
 const int LEDMATRIX_SEGMENTS = 4;                                           // Number of 8x8 Segments
 const uint8_t LEDMATRIX_CS_PIN = D4;                                        // CableSelect pin
