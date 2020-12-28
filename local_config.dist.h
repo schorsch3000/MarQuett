@@ -8,6 +8,9 @@ const char* mqtt_server = "";                                               // H
 const char* mqtt_username = "";                                             // Username used to connect to MQTT-Server, leave empty if unused
 const char* mqtt_password = "";                                             // Password used to connect to MQTT-Server, leave empty if unused
 
+// set to false if you do not want to publish anything:
+const bool do_publishes = true;
+
 // you may change the default topic root "ledMatrix" to something different here
 //#define TOPICROOT "ledMatrix"
 

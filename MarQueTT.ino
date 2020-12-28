@@ -33,7 +33,8 @@ void setup() {
   led.setIntensity(0);
   led.setEnabled(true);
   calculate_font_index();
-  client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "startup");
+  if (do_publishes)
+    client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "startup");
 }
 
 void loop()
@@ -54,7 +55,8 @@ void loop()
   loop_matrix();
   if (!client.connected()) {
     reconnect();
-    client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "reconnect");
+    if (do_publishes)
+      client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "reconnect");
   }
   client.loop();
 }
@@ -288,7 +290,7 @@ void nextChar()
   {
     textIndex = 0;
     scrollWhitespace = LEDMATRIX_WIDTH; // start over with empty display
-    if (scrollDelay)
+    if (scrollDelay && do_publishes)
       client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "repeat");
   }
 }
