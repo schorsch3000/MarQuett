@@ -8,8 +8,13 @@
 #define TOPICROOT "ledMatrix"
 #endif
 
-uint8_t text[MAX_TEXT_LENGTH];
 LEDMatrixDriver led(LEDMATRIX_SEGMENTS, LEDMATRIX_CS_PIN, 0);
+
+uint8_t texts[NUM_CHANNELS][MAX_TEXT_LENGTH];
+uint8_t textcycle[NUM_CHANNELS];
+uint8_t num_textcycles = 1;
+uint8_t current_cycle = 0;
+uint16_t current_channel = 0;
 uint16_t textIndex = 0;
 uint8_t colIndex = 0;
 uint16_t scrollWhitespace = 0;
@@ -27,9 +32,12 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   client.setBufferSize(MAX_TEXT_LENGTH);
-  for (int i = 0; i < sizeof(text); i++) {
-    text[i] = initialText[i];
+  for (int c = 0; c < NUM_CHANNELS; c++) {
+    for (int i = 0; i < sizeof(texts[c]); i++) {
+      texts[c][i] = initialText[i];
+    }
   }
+  textcycle[0] = 0;
   led.setIntensity(0);
   led.setEnabled(true);
   calculate_font_index();
@@ -82,7 +90,7 @@ void setup_wifi() {
   Serial.println(WiFi.macAddress());
   byte mac[6];
   WiFi.macAddress(mac);
-  snprintf(devname, sizeof(devname), "MarQueTTino/%02X%02X%02X", mac[3], mac[4], mac[5]);
+  snprintf(devname, sizeof(devname), "%02X%02X%02X", mac[3], mac[4], mac[5]);
   Serial.println((String)"This device is called '" + devname + "'.");
 }
 
@@ -101,9 +109,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++)  Serial.print((char)(payload[i]));
   Serial.println("]");
 
-  char* command = topic + String(topic).lastIndexOf("/") + 1;
+  String command = topic + String(topic).lastIndexOf(TOPICROOT "/") + strlen(TOPICROOT) + 1;
 
-  if (!strcmp(command, "intensity")) {
+  if (command.startsWith(devname)) {
+    command.remove(0, strlen(devname) + 1);
+  }
+
+  Serial.println((String)"Command = [" + command + "]");
+
+  if (command.equals("intensity")) {
     int intensity = 0;
     for (int i = 0 ; i < length;  i++) {
       intensity *= 10;
@@ -114,7 +128,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  if (!strcmp(command, "delay")) {
+  if (command.equals("delay")) {
     scrollDelay = 0;
     for (int i = 0 ; i < length;  i++) {
       scrollDelay *= 10;
@@ -132,7 +146,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  if (!strcmp(command, "blink")) {
+  if (command.equals("blink")) {
     blinkDelay = 0;
     for (int i = 0 ; i < length;  i++) {
       blinkDelay *= 10;
@@ -154,14 +168,75 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
 
-  if (!strcmp(command, "enable")) {
+  if (command.equals("enable")) {
     led.setEnabled(payload[0] == '1');
   }
 
 
-  if (!strcmp(command, "text")) {
+  if (command.equals("channel")) {
+    payload[length] = 0;
+    String msg = (String)(char*)payload;
+    if (msg.equals("")) {
+      Serial.println((String)"set channel to default (0)");
+      textcycle[0] = 0;
+      num_textcycles = 1;
+      current_channel = textcycle[current_cycle];
+    } else {
+      // parse comma-separated list of channels (or a single channel number)
+      Serial.println((String)"set channel to comma-separated list: " + msg);
+      num_textcycles = 0;
+      int pos = 0;
+      while (1) {
+        int newpos = msg.substring(pos).indexOf(",");
+        if (newpos != -1) {
+          Serial.println((String)"pos=" + pos + " -> search [" + msg.substring(pos)
+                         + "] => newpos=" + (pos + newpos)
+                         + " => add substring " + msg.substring(pos, pos + newpos));
+          textcycle[num_textcycles++] = msg.substring(pos, pos + newpos).toInt();
+          pos = pos + newpos + 1;
+        } else {
+          Serial.println((String)"pos=" + pos + " -> search [" + msg.substring(pos)
+                         + "] => not found"
+                         + " => add substring " + msg.substring(pos));
+          textcycle[num_textcycles++] = msg.substring(pos).toInt();
+          break; // done!
+        }
+      }
+      Serial.print((String)"Found " + num_textcycles + " cycle indices:");
+      for (int i = 0; i < num_textcycles; i++)
+        Serial.print((String)" " + textcycle[i]);
+      Serial.println(".");
+      current_cycle = 0;
+      current_channel = textcycle[current_cycle];
+      current_cycle = (current_cycle + 1) % num_textcycles;
+    }
+    // if display is scrolling, text will be changed at the end of the current cycle
+    if (scrollDelay == 0) {
+      // otherwise trigger redraw on display
+      textIndex = 0;
+    }
+    return;
+  }
+
+
+  if (command.startsWith("text")) {
     const bool pr = 1;                                // set to 1 for debug prints
-    if (pr) printHex8(payload, length);
+    if (pr) {
+      Serial.print("content = [");
+      printHex8(payload, length);
+      Serial.println((String)"] (" + length + " bytes)");
+    }
+
+    int target_channel;
+    if (command.equals("text"))
+      target_channel = 0;
+    else
+      target_channel = command.substring(command.lastIndexOf("/") + 1).toInt();
+    if (target_channel < 0) target_channel = 0;
+    if (target_channel > NUM_CHANNELS - 1) target_channel = NUM_CHANNELS - 1;
+    Serial.println((String)"Target text channel: " + target_channel);
+
+    uint8_t* text = texts[target_channel];
     text[0] = ' ';
     for (int i = 0 ; i < 4096; i++) {
       text[i] = 0;
@@ -181,7 +256,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
         if (b == 0xc3) {                              // UTF-8 1st byte
           text[j++] = payload[i++] + 64;              // map 2nd byte to Latin-1 (simplified)
         } else if (b == 0xc2) {
-          if (i < length && payload[i] == 0xA7) {         // § = section sign
+          if (i < length && payload[i] == 0xA7) {     // § = section sign
             text[j++] = 0xA7;
           } else if (i < length && payload[i] == 0xB0) {  // ° = degrees sign
             text[j++] = 0xB0;
@@ -206,6 +281,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
             text[j++] = 0x96;                           // – = en dash
           } else if (payload[i] == 0x80 && payload[i + 1] == 0x94) {
             text[j++] = 0x97;                           // — = em dash
+          } else if (payload[i] == 0x80 && payload[i + 1] == 0xA2) {
+            text[j++] = 0xB7;                           // • = bullet
           } else if (payload[i] == 0x80 && payload[i + 1] == 0xA6) {
             text[j++] = 0x85;                           // … = ellipsis
           } else {
@@ -245,8 +322,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
         text[i] = 0x7f;
       }
     }
-    if (pr) Serial.print((String)"=> Text (" + j + " bytes): ");
-    if (pr) printHex8(text, j + 1);
+    if (pr) {
+      Serial.print((String)"=> Text[channel " + target_channel + "] (" + j + " bytes): ");
+      printHex8(text, j + 1);
+      Serial.println();
+    }
 
     textIndex = 0;
     colIndex = 0;
@@ -271,8 +351,12 @@ void reconnect() {
       client.subscribe(((String)TOPICROOT "/" + devname + "/delay").c_str());
       client.subscribe(TOPICROOT "/text");
       client.subscribe(((String)TOPICROOT "/" + devname + "/text").c_str());
+      client.subscribe(TOPICROOT "/text/#");
+      client.subscribe(((String)TOPICROOT "/" + devname + "/text/#").c_str());
       client.subscribe(TOPICROOT "/blink");
       client.subscribe(((String)TOPICROOT "/" + devname + "/blink").c_str());
+      client.subscribe(TOPICROOT "/channel");
+      client.subscribe(((String)TOPICROOT "/" + devname + "/channel").c_str());
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -286,12 +370,14 @@ const uint16_t LEDMATRIX_WIDTH    = LEDMATRIX_SEGMENTS * 8;
 
 void nextChar()
 {
-  if (text[++textIndex] == '\0')
+  if (texts[current_channel][++textIndex] == '\0')
   {
     textIndex = 0;
     scrollWhitespace = LEDMATRIX_WIDTH; // start over with empty display
     if (scrollDelay && do_publishes)
       client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "repeat");
+    current_channel = textcycle[current_cycle];
+    current_cycle = (current_cycle + 1) % num_textcycles;
   }
 }
 
@@ -312,7 +398,7 @@ void writeCol()
     scrollWhitespace--;
     return;
   }
-  uint8_t asc = text[textIndex] - 32;
+  uint8_t asc = texts[current_channel][textIndex] - 32;
   uint16_t idx = pgm_read_word(&(font_index[asc]));
   uint8_t w = pgm_read_byte(&(font[idx]));
   uint8_t col = pgm_read_byte(&(font[colIndex + idx + 1]));
@@ -338,7 +424,7 @@ void loop_matrix()
     marquee();
   } else {
     if (textIndex == 0) {   // start writing text to display (e.g. after text was changed)
-      Serial.println("display static text");
+      Serial.println((String)"Display static text no." + current_channel);
       colIndex = 0;
       marqueeDelayTimestamp = 0;
       scrollWhitespace = 0;
@@ -346,7 +432,7 @@ void loop_matrix()
       uint8_t displayColumn = 0; // start left
       while (displayColumn < LEDMATRIX_WIDTH) {
         // write one column
-        uint8_t asc = text[textIndex] - 32;
+        uint8_t asc = texts[current_channel][textIndex] - 32;
         uint16_t idx = pgm_read_word(&(font_index[asc]));
         uint8_t w = pgm_read_byte(&(font[idx]));
         uint8_t col = pgm_read_byte(&(font[colIndex + idx + 1]));
@@ -356,7 +442,7 @@ void loop_matrix()
         if (++colIndex == w) {
           displayColumn += 1;
           colIndex = 0;
-          if (text[++textIndex] == '\0') {
+          if (texts[current_channel][++textIndex] == '\0') {
             return; // done
             textIndex = 0;
           }
