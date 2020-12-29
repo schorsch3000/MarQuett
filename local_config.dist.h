@@ -17,5 +17,6 @@ const bool do_publishes = true;
 const int LEDMATRIX_SEGMENTS = 4;                                           // Number of 8x8 Segments
 const uint8_t LEDMATRIX_CS_PIN = D4;                                        // CableSelect pin
 #define MAX_TEXT_LENGTH 4096                                                // Maximal text length, to large might use up to much ram
+#define NUM_CHANNELS 10                                                     // number of text channels
 const char* initialText = "Ready, waiting for text via MQTT";               // Initial Text shown before the first MQTT-Message is recieved, don't leave empty, to shwo no text on startup set to " " 
 uint16_t scrollDelay = 25;                                                  // Initial Scroll deplay
