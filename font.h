@@ -241,7 +241,7 @@ uint16_t* font_index; // will be calculated at start by calculate_font_index()
 void calculate_font_index()
 {
   uint16 fontsize = sizeof(font);
-  Serial.println((String)"Font uses " + fontsize + " bytes.");
+  LogTarget.println((String)"Font uses " + fontsize + " bytes.");
   uint8_t* fontptr = (uint8_t*)font;
   int num_chars = 0;
   // 1st sweep: count chars
@@ -257,7 +257,7 @@ void calculate_font_index()
   for (int i = 0; i < num_chars; i++) {
     index[i] = fontptr - font;
     int char_width = pgm_read_byte(fontptr); //*fontptr;
-    //Serial.println((String)"idx " + i + " = " + (char)(i+32) + ": " + char_width + " -> " + index[i]);
+    //LogTarget.println((String)"idx " + i + " = " + (char)(i+32) + ": " + char_width + " -> " + index[i]);
     fontptr += char_width + 1;  // add character X size
   }
   font_index = index;

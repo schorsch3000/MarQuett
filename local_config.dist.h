@@ -14,9 +14,16 @@ const bool do_publishes = true;
 // you may change the default topic root "ledMatrix" to something different here
 //#define TOPICROOT "ledMatrix"
 
+// you may set LOG_TELNET here to 1 if you want logging via telnet (Port 23):
+//#define LOG_TELNET  1
+
 const int LEDMATRIX_SEGMENTS = 4;                                           // Number of 8x8 Segments
 const uint8_t LEDMATRIX_CS_PIN = D4;                                        // CableSelect pin
-#define MAX_TEXT_LENGTH 4096                                                // Maximal text length, to large might use up to much ram
-#define NUM_CHANNELS 10                                                     // number of text channels
-const char* initialText = "Ready, waiting for text via MQTT";               // Initial Text shown before the first MQTT-Message is recieved, don't leave empty, to shwo no text on startup set to " " 
-uint16_t scrollDelay = 25;                                                  // Initial Scroll deplay
+
+#define MAX_TEXT_LENGTH 3500                      // Maximal text length, to large might use up to much ram
+#define NUM_CHANNELS 10                           // Number of text channels
+uint16_t scrollDelay = 25;                        // Initial scroll delay
+const char* initialText = "no such text";         // Initial Text shown before the first MQTT-Message is received
+                                                  // Don't leave empty -- to show no text on startup set to " "
+                                                  // Use only 7-Bit ASCII characters!
+#define MAX_TEXTCYCLE 32                          // Maximum number of texts in one cycle
