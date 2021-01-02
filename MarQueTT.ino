@@ -30,6 +30,7 @@ uint8_t texts[NUM_CHANNELS][MAX_TEXT_LENGTH];
 uint8_t textcycle[MAX_TEXTCYCLE];
 uint8_t num_textcycles = 1;
 uint8_t current_cycle = 0;
+uint8_t start_countdown = START_CYCLES;
 uint16_t current_channel = 0;
 uint16_t textIndex = 0;
 uint8_t colIndex = 0;
@@ -55,9 +56,9 @@ void setup() {
   client.setCallback(callback);
   client.setBufferSize(MAX_TEXT_LENGTH);
   for (int c = 0; c < NUM_CHANNELS; c++) {
-    snprintf((char*)(texts[c]), MAX_TEXT_LENGTH, "[%d] %s", c, initialText);
+    //snprintf((char*)(texts[c]), MAX_TEXT_LENGTH, "[%d] %s", c, initialText);
+    snprintf((char*)(texts[c]), sizeof(texts[c]), "MarQueTTino %s", devaddr);
   }
-  getScrolltextFromBuffer(0);
   textcycle[0] = 0;
   led.setIntensity(0);
   led.setEnabled(true);
@@ -87,10 +88,9 @@ void setup_wifi() {
   Serial.println(WiFi.macAddress());
   byte mac[6];
   WiFi.macAddress(mac);
-  snprintf(devname, sizeof(devaddr), "%02X%02X%02X", mac[3], mac[4], mac[5]);
+  snprintf(devaddr, sizeof(devaddr), "%02X%02X%02X", mac[3], mac[4], mac[5]);
   snprintf(devname, sizeof(devname), "MarQueTTino-%02X%02X%02X", mac[3], mac[4], mac[5]);
   Serial.println((String)"This device is called '" + devname + "'.");
-  snprintf((char*)(texts[0]), sizeof(texts[0]), "MarQueTTino %02X%02X%02X", mac[3], mac[4], mac[5]);
 
   WiFi.hostname(devname);
   ArduinoOTA.setHostname(devname);
@@ -445,9 +445,14 @@ void nextChar()
     scrollWhitespace = LEDMATRIX_WIDTH; // start over with empty display
     if (scrollDelay && do_publishes)
       client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "repeat");
-    current_channel = textcycle[current_cycle];
-    current_cycle = (current_cycle + 1) % num_textcycles;
-    getScrolltextFromBuffer(current_channel);
+
+    if (start_countdown) {
+      start_countdown--;
+    } else {
+      current_channel = textcycle[current_cycle];
+      current_cycle = (current_cycle + 1) % num_textcycles;
+      getScrolltextFromBuffer(current_channel);
+    }
   }
 }
 

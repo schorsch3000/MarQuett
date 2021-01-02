@@ -27,3 +27,4 @@ const char* initialText = "no such text";         // Initial Text shown before t
                                                   // Don't leave empty -- to show no text on startup set to " "
                                                   // Use only 7-Bit ASCII characters!
 #define MAX_TEXTCYCLE 32                          // Maximum number of texts in one cycle
+#define START_CYCLES  3                           // Number of cycles for the start message
