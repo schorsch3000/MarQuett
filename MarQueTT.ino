@@ -1,8 +1,32 @@
+/*
+ *  MarQueTT[ino]     Matrix Display based on n x 8x8 monochrome LEDs, driven by MAX7221
+ *  
+ *  a 2020/2021 c3RE project
+ *  
+ */
+
+#define VERSION "1.3.3"
+
+/*  Version history:
+ *  1.3.3   show + publish version number
+ *  1.3.2   show device address (lower 3 bytes of MAC address)
+ *  1.3.1   OTA, TelnetStream logging
+ *  1.3.0   multiple text channels, cycling
+ *  1.2.2   silent (no-publish) mode
+ *  1.2.1   device-specific topics, 
+ *  1.2.0   no-scroll mode
+ *  1.1.1   publish will (offline status), font editor (offline HTML)
+ *  1.1.0   larger MQTT message buffer, publish status, UTF-8 special characters
+ *  1.0.1   blinking
+ *  1.0.0   initial version
+ */
+
 #include <LEDMatrixDriver.hpp>
 #include <ESP8266WiFi.h>
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
 #include "local_config.h"
+
 
 #ifndef TOPICROOT
 #define TOPICROOT "ledMatrix"
@@ -20,6 +44,7 @@
 #endif
 
 #include "font.h"
+
 
 // variables
 
@@ -44,27 +69,36 @@ char devname[40];
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+
 // forward declarations
 
 void getScrolltextFromBuffer(int channel);
 
 
+// functions
+
 void setup() {
   Serial.begin(115200);
+  Serial.println();
+  Serial.println();
+  Serial.println("MarQueTT[ino] Version " VERSION);
+  Serial.println();
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   client.setBufferSize(MAX_TEXT_LENGTH);
   for (int c = 0; c < NUM_CHANNELS; c++) {
     //snprintf((char*)(texts[c]), MAX_TEXT_LENGTH, "[%d] %s", c, initialText);
-    snprintf((char*)(texts[c]), sizeof(texts[c]), "MarQueTTino %s", devaddr);
+    snprintf((char*)(texts[c]), sizeof(texts[c]), "MarQueTTino %s Version %s", devaddr, VERSION);
   }
   textcycle[0] = 0;
   led.setIntensity(0);
   led.setEnabled(true);
   calculate_font_index();
-  if (do_publishes)
+  if (do_publishes) {
     client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), "startup");
+    client.publish((((String)TOPICROOT "/" + devname + "/status").c_str()), ((String)"version " + VERSION).c_str());
+  }
 }
 
 
@@ -168,6 +202,7 @@ void printHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with l
     LogTarget.print(tmp); LogTarget.print(" ");
   }
 }
+
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
@@ -405,6 +440,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
+
 void reconnect() {
   while (!client.connected()) {
     LogTarget.print("Attempting MQTT connection...");
@@ -434,6 +470,7 @@ void reconnect() {
     }
   }
 }
+
 
 const uint16_t LEDMATRIX_WIDTH    = LEDMATRIX_SEGMENTS * 8;
 
@@ -493,6 +530,7 @@ void marquee()
   led.display();
 }
 
+
 void getScrolltextFromBuffer(int channel)
 {
   LogTarget.print((String)"Show buffer " + channel + ": [");
@@ -512,6 +550,7 @@ void getScrolltextFromBuffer(int channel)
   }
   scrollbuffer[MAX_TEXT_LENGTH - 1] = 0;
 }
+
 
 void loop_matrix()
 {
