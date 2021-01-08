@@ -14,6 +14,15 @@
 - `ledMatrix/blink`: 0 = no blinking; 1 = fastest, 1000 = slowest blinking. Default: 0
 - `ledMatrix/enable`: 0 = display off, 1 = display on. Default: 1
 
+**Extension:** text channels, `<cno>` = `0`..`9`
+
+- `ledMatrix/text/<cno>`    — text for a specific channel (`.../text/0` = same as `.../text`)
+- `ledMatrix/channel`       — set channels to be displayed
+  - `<cno1>[,<cno2>...]`    — list of channels
+  - `<cno1>`                — only one channel
+  - "" (empty)              — only channel 0
+
+
 #### Individual Topics
 
 ##### Subscribed by Device
@@ -21,14 +30,6 @@
 Same as global topics, but `ledMatrix/<aabbcc>/...` instead of `ledMatrix/...` (<aabbcc> == serial number in 3 hex bytes).
 
 TBD: priority of individual topics over global topics ?
-
-Extension: text channels, `<cno>` = `0`..`9`
-
-- `ledMatrix/text/<cno>`    — text for a specific channel (`.../text/0` = same as `.../text`)
-- `ledMatrix/channel`       — set channels to be displayed
-  - `<cno1>[,<cno2>...]`    — list of channels
-  - `<cno1>`                — only one channel
-  - "" (empty)              — only channel 0
 
 ##### Published by Device
 
