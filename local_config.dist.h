@@ -24,7 +24,7 @@ const uint8_t LEDMATRIX_CS_PIN = D4;                                        // C
                                                   // too large might use up too much RAM and cause strange errors
 #define NUM_CHANNELS 10                           // Number of text channels
 uint16_t scrollDelay = 25;                        // Initial scroll delay
-uint16_t cycleDelay = 5;                          // Initial cycle delay (if delay==0, i.e. no scroll)
+uint16_t cycleDelay = 5000;                       // Initial cycle delay (if delay==0, i.e. no scroll)
 const char* initialText = "no such text";         // Initial Text shown before the first MQTT-Message is received
                                                   // Don't leave empty -- to show no text on startup set to " "
                                                   // Use only 7-Bit ASCII characters!
