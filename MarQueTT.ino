@@ -1,25 +1,26 @@
 /*
- *  MarQueTT[ino]     Matrix Display based on n x 8x8 monochrome LEDs, driven by MAX7221
- *  
- *  a 2020/2021 c3RE project
- *  
- */
+    MarQueTT[ino]     Matrix Display based on n x 8x8 monochrome LEDs, driven by MAX7221
 
-#define VERSION "1.3.3"
+    a 2020/2021 c3RE project
+
+*/
+
+#define VERSION "1.3.4"
 
 /*  Version history:
- *  1.3.3   show + publish version number
- *  1.3.2   show device address (lower 3 bytes of MAC address)
- *  1.3.1   OTA, TelnetStream logging
- *  1.3.0   multiple text channels, cycling
- *  1.2.2   silent (no-publish) mode
- *  1.2.1   device-specific topics, 
- *  1.2.0   no-scroll mode
- *  1.1.1   publish will (offline status), font editor (offline HTML)
- *  1.1.0   larger MQTT message buffer, publish status, UTF-8 special characters
- *  1.0.1   blinking
- *  1.0.0   initial version
- */
+    1.3.4   options for static text display
+    1.3.3   show + publish version number
+    1.3.2   show device address (lower 3 bytes of MAC address)
+    1.3.1   OTA, TelnetStream logging
+    1.3.0   multiple text channels, cycling
+    1.2.2   silent (no-publish) mode
+    1.2.1   device-specific topics,
+    1.2.0   no-scroll mode
+    1.1.1   publish will (offline status), font editor (offline HTML)
+    1.1.0   larger MQTT message buffer, publish status, UTF-8 special characters
+    1.0.1   blinking
+    1.0.0   initial version
+*/
 
 #include <LEDMatrixDriver.hpp>
 #include <ESP8266WiFi.h>
@@ -60,11 +61,13 @@ uint16_t current_channel = 0;
 uint16_t textIndex = 0;
 uint8_t colIndex = 0;
 uint16_t scrollWhitespace = 0;
+uint64_t marqueeCycleTimestamp = 0;
 uint64_t marqueeDelayTimestamp = 0;
 uint64_t marqueeBlinkTimestamp;
 uint16_t blinkDelay = 0;
 char devaddr[20];
 char devname[40];
+String devname_lc;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -125,6 +128,8 @@ void setup_wifi() {
   snprintf(devaddr, sizeof(devaddr), "%02X%02X%02X", mac[3], mac[4], mac[5]);
   snprintf(devname, sizeof(devname), "MarQueTTino-%02X%02X%02X", mac[3], mac[4], mac[5]);
   Serial.println((String)"This device is called '" + devname + "'.");
+  devname_lc = String(devname);
+  devname_lc.toLowerCase(); // used for topic comparisons
 
   WiFi.hostname(devname);
   ArduinoOTA.setHostname(devname);
@@ -172,9 +177,6 @@ void loop()
 {
   ArduinoOTA.handle();
   if (blinkDelay) {
-    if (marqueeBlinkTimestamp > millis()) {
-      marqueeBlinkTimestamp > millis();
-    }
     if (marqueeBlinkTimestamp + blinkDelay < millis()) {
       led.setEnabled(false);
       delay(1);
@@ -204,16 +206,20 @@ void printHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with l
 }
 
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char* topic, byte* payload, unsigned int length)
+{
+  if (String(topic).endsWith("status")) return; // don't process stuff we just published
 
   LogTarget.print((String)"MQTT in: " + topic + "\t = [");
-  for (int i = 0; i < length; i++)  LogTarget.print((char)(payload[i]));
+  for (int i = 0; i < min((int)length, 30); i++)  LogTarget.print((char)(payload[i]));
+  if (length > 30) LogTarget.print("...");
   LogTarget.println("]");
 
   String command = topic + String(topic).lastIndexOf(TOPICROOT "/") + strlen(TOPICROOT) + 1;
+  command.toLowerCase();
 
-  if (command.startsWith(devname)) {
-    command.remove(0, strlen(devname) + 1);
+  if (command.startsWith(devname_lc)) { // device-specific topic was used
+    command.remove(0, strlen(devname) + 1);   // strip device name
   }
 
   LogTarget.println((String)"Command = [" + command + "]");
@@ -231,19 +237,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   if (command.equals("delay")) {
     scrollDelay = 0;
-    for (int i = 0 ; i < length;  i++) {
+    bool negative = false;
+    int i = 0;
+    if (payload[0] == '-') {
+      negative = true;
+      i = 1;
+    }
+    for ( ; i < length;  i++) {
       scrollDelay *= 10;
       scrollDelay += payload[i] - '0';
     }
+
     if (scrollDelay == 0) {
       textIndex = 0;
-    } else if (scrollDelay < 1) {
-      scrollDelay = 1;
+      LogTarget.println((String)"Set no-scroll, cycle = " + cycleDelay);
+    } else if (negative) {
+      cycleDelay = scrollDelay;   // negative value given is new cycle delay, no scrolling
+      textIndex = 0;
+      scrollDelay = 0;
+      LogTarget.println((String)"Set no-scroll, cycle = " + cycleDelay);
+    } else {
+      if (scrollDelay > 10000) {
+        scrollDelay = 10000;
+      }
+      LogTarget.println((String)"Set scroll delay = " + scrollDelay);
     }
-    if (scrollDelay > 10000) {
-      scrollDelay = 10000;
-    }
-
     return;
   }
 
@@ -347,8 +365,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     int i = 0, j = 0;
     while (i < length) {
       uint8_t b = payload[i++];
-      sprintf(tmp, "0x%.2X = '%c' -> ", b, b);
-      if (pr) LogTarget.print(tmp);
+      if (pr) {
+        sprintf(tmp, "0x%.2X = '%c' -> ", b, b);
+        LogTarget.print(tmp);
+      }
       if ((b & 0b10000000) == 0) {                    // 7-bit ASCII
         if (pr) LogTarget.println("ASCII");
         text[j++] = b;
@@ -448,20 +468,7 @@ void reconnect() {
     clientId += String(random(0xffff), HEX);
     if (client.connect(clientId.c_str(), mqtt_username, mqtt_password, TOPICROOT "/status", 1, true, "Offline")) {
       LogTarget.println("connected");
-      client.subscribe(TOPICROOT "/enable");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/enable").c_str());
-      client.subscribe(TOPICROOT "/intensity");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/intensity").c_str());
-      client.subscribe(TOPICROOT "/delay");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/delay").c_str());
-      client.subscribe(TOPICROOT "/text");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/text").c_str());
-      client.subscribe(TOPICROOT "/text/#");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/text/#").c_str());
-      client.subscribe(TOPICROOT "/blink");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/blink").c_str());
-      client.subscribe(TOPICROOT "/channel");
-      client.subscribe(((String)TOPICROOT "/" + devname + "/channel").c_str());
+      client.subscribe(TOPICROOT "/#");
     } else {
       LogTarget.print("failed, rc=");
       LogTarget.print(client.state());
@@ -541,7 +548,8 @@ void getScrolltextFromBuffer(int channel)
     } else {
       uint8_t ch = texts[channel][i];
       scrollbuffer[i] = ch;
-      LogTarget.print(String(char(ch)));
+      if (i<=30)
+        LogTarget.print(String(char(ch)));
       if (!ch) {
         eot = true;
         LogTarget.println((String)"] (" + i + " bytes)");
@@ -557,6 +565,16 @@ void loop_matrix()
   if (scrollDelay) {
     marquee();
   } else {
+
+    // cycle non-scrolling text channels
+    if (marqueeCycleTimestamp + cycleDelay < millis()) {
+      marqueeCycleTimestamp = millis();
+      textIndex = 0;
+      LogTarget.println("next static text");
+      current_channel = textcycle[current_cycle];
+      current_cycle = (current_cycle + 1) % num_textcycles;
+    }
+
     if (textIndex == 0) {   // begin writing text to display (e.g. after text was changed)
       LogTarget.println((String)"Display static text no." + current_channel);
       getScrolltextFromBuffer(current_channel);
