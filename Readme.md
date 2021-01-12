@@ -10,9 +10,12 @@
 
 - `ledMatrix/text`  : A UTF-8 coded text, max. 4096 bytes long.
 - `ledMatrix/intensity`: 0 = lowest, 15 = highest. Default: 1.
-- `ledMatrix/delay`: 0 = no scrolling; 1 = fastest, 1000 = slowest scrolling. Default: 25
+- `ledMatrix/delay`: 1 = fastest, 1000 = slowest scrolling. Default: 25 
+-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 0 = no scrolling; < 0: negative value sets page cycle time in ms. Default: 5000 ms
 - `ledMatrix/blink`: 0 = no blinking; 1 = fastest, 1000 = slowest blinking. Default: 0
 - `ledMatrix/enable`: 0 = display off, 1 = display on. Default: 1
+
+Default values are configurable in `local_config.h`. You can also use retained messages, preferably with individual topics (see below).
 
 **Extension:** text channels, `<cno>` = `0`..`9`
 
@@ -40,7 +43,9 @@ TBD: priority of individual topics over global topics ?
   - `repeat`        — sent at end of a sequence (TBD: for each channel or total sequence?)
   - `offline`       — sent as will when the MQTT connection disconnects unexpectedly
 
-### Wiring
+### Setup
+
+#### Wiring
 
 Connect your display's X pin to your controller's Y pin:
 
@@ -49,6 +54,12 @@ Connect your display's X pin to your controller's Y pin:
 - `CS` to any digial port except `MISO` or `SS` (e.g. `D4`) 
 
 See https://github.com/bartoszbielawski/LEDMatrixDriver#pin-selection for more information
+
+#### Software
+
+- Copy `local_config.dist.h` to `local_config.h` and fill in WLAN credentials. 
+- Check the `LEDMATRIX_`* constants according to your hardware setup.
+- You might also want to change the default values.
 
 ### Change Ideas
 
