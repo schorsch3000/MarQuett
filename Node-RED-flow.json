@@ -1,0 +1,2565 @@
+[
+    {
+        "id": "cebedba3.f3ea28",
+        "type": "tab",
+        "label": "Marquee",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "dd2463b.19fa72",
+        "type": "mqtt out",
+        "z": "cebedba3.f3ea28",
+        "name": "→ Home",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "4a8f9596.4cdd74",
+        "x": 560,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "f4868eed.e7efa",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble news",
+        "func": "\nvar msgs = [];\ntext = `+++[${msg.topic}]+++ `.concat(msg.payload.feed.title[0].replace(\"Nachrichten\",\"NRW\").replace(\"- WDR.de\",\"\")).concat(\"+++  \");\nnum = 0;\nfor (const i in msg.payload.feed.entry) {\n    if (num >= 8) break;\n    title = msg.payload.feed.entry[i].title[0];\n    if (title.includes(\" ich \") || title.includes(\"FAQ\"))\n        continue;\n    if (title.startsWith(\"Lokalzeit \") || title.includes(\"WDR aktuell\") || title.includes(\" ich \"))\n        break;  // no more news\n    if (title.includes(\"Fussball\") || title.includes(\"Fußball\") || title.includes(\"Bundesliga\") || title.includes(\"Regionalliga\") || title.includes(\"Spieltag\") || title.includes(\"Sport\"))\n        break;  // no more news\n    text = text.concat(title).concat(\"  +++  \")\n    num++;\n//    msgs.push({\n//        \"topic\": \"ledMatrix/text\", \n//        \"payload\": title\n//    });\n}\ntext = text.replace(\" \", \" \");\nmsgs.push({\n        \"topic\": `ledMatrix/text/${msg.topic}`,\n        \"payload\": text\n    });\nflow.set(\"headlines\", msgs);\n\nreturn msgs;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1060,
+        "y": 540,
+        "wires": [
+            [
+                "4284b11f.f2812"
+            ]
+        ]
+    },
+    {
+        "id": "f2621320.750528",
+        "type": "xml",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "property": "payload",
+        "attr": "",
+        "chr": "",
+        "x": 910,
+        "y": 540,
+        "wires": [
+            [
+                "f4868eed.e7efa"
+            ]
+        ]
+    },
+    {
+        "id": "e8e5e3bb.c28ae",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "feed Marquee with information",
+        "info": "",
+        "x": 150,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "e29aa28f.5dcfc",
+        "type": "http request",
+        "z": "cebedba3.f3ea28",
+        "name": "Ruhrgebiet",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "https://www1.wdr.de/nachrichten/ruhrgebiet/uebersicht-ruhrgebiet-100.feed",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 670,
+        "y": 580,
+        "wires": [
+            [
+                "f2621320.750528"
+            ]
+        ]
+    },
+    {
+        "id": "aeec710b.c2d3a",
+        "type": "http request",
+        "z": "cebedba3.f3ea28",
+        "name": "NRW",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "https://www1.wdr.de/wissen/uebersicht-nachrichten-100.feed",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 650,
+        "y": 540,
+        "wires": [
+            [
+                "f2621320.750528"
+            ]
+        ]
+    },
+    {
+        "id": "41656cf9.ba6b44",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 540,
+        "wires": [
+            [
+                "705997f2.8a6558"
+            ]
+        ]
+    },
+    {
+        "id": "e39dd00d.c9fdd8",
+        "type": "openweathermap",
+        "z": "cebedba3.f3ea28",
+        "name": "current home weather",
+        "wtype": "current",
+        "lon": "7.00000",
+        "lat": "51.00000",
+        "city": "",
+        "country": "",
+        "language": "de",
+        "x": 700,
+        "y": 660,
+        "wires": [
+            [
+                "a85bbc0.8cf34c8"
+            ]
+        ]
+    },
+    {
+        "id": "c3b6068a.19c72",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 130,
+        "y": 580,
+        "wires": [
+            [
+                "e19f983e.5d5258"
+            ]
+        ]
+    },
+    {
+        "id": "a85bbc0.8cf34c8",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble weather",
+        "func": "\npl = msg.payload;\nsectors = 16;\nwdir = Math.floor((pl.winddirection + (180/sectors)) / (360/sectors));\n//wdirname = [\"N\",\"NO\",\"O\",\"SO\",\"S\",\"SW\",\"W\",\"NW\",\"N\"][wdir];\nwdirname = [\"N\",\"NNO\",\"NO\",\"ONO\",\"O\",\"OSO\",\"SO\",\"SSO\",\"S\",\"SSW\",\"SW\",\"WSW\",\"W\",\"WNW\",\"NW\",\"NNW\",\"N\"][wdir];\n\ntext = text = `+++[${msg.topic}]+++ Wetter in ${pl.location}: ${pl.detail} bei ${pl.tempc}°C, Wind ${(pl.windspeed*3.6).toFixed(1)} km/h aus ${wdirname}.  +++`;\n\nmsg.topic = `ledMatrix/text/${msg.topic}`;\nmsg.payload = text;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1070,
+        "y": 660,
+        "wires": [
+            [
+                "4593c2c0.497ffc"
+            ]
+        ]
+    },
+    {
+        "id": "e19f983e.5d5258",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 4",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "4",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 580,
+        "wires": [
+            [
+                "e29aa28f.5dcfc"
+            ]
+        ]
+    },
+    {
+        "id": "d8ee53b9.4e6e6",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 5",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "5",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 620,
+        "wires": [
+            [
+                "e39dd00d.c9fdd8",
+                "c41a439e.99a3b"
+            ]
+        ]
+    },
+    {
+        "id": "705997f2.8a6558",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 3",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "3",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 540,
+        "wires": [
+            [
+                "aeec710b.c2d3a"
+            ]
+        ]
+    },
+    {
+        "id": "a41af02f.9fd8a",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 500,
+        "wires": [
+            [
+                "e88563e0.e28218"
+            ]
+        ]
+    },
+    {
+        "id": "1a55dc19.a3d7d4",
+        "type": "http request",
+        "z": "cebedba3.f3ea28",
+        "name": "Tagesschau",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": false,
+        "url": "https://www.tagesschau.de/xml/rss2/",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 670,
+        "y": 500,
+        "wires": [
+            [
+                "a0dec78d.cc7bd"
+            ]
+        ]
+    },
+    {
+        "id": "3e90984d.576c68",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 130,
+        "y": 620,
+        "wires": [
+            [
+                "d8ee53b9.4e6e6"
+            ]
+        ]
+    },
+    {
+        "id": "e88563e0.e28218",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 2",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "2",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 500,
+        "wires": [
+            [
+                "1a55dc19.a3d7d4"
+            ]
+        ]
+    },
+    {
+        "id": "33dd8f8c.8c1238",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble news",
+        "func": "\nvar msgs = [];\ntext = `+++[${msg.topic}]+++ `.concat(msg.payload.rss.channel[0].title).concat(\" +++  \");\ntext = text.replace(\"*\",\"*\").replace(\" - Die Nachrichten der ARD\",\"\")\nnum = 0;\n\nfor (const i in msg.payload.rss.channel[0].item) {\n    if (num >= 18) break;\n    title = `${msg.payload.rss.channel[0].item[i].title}`;\n    if (title.includes(\" ich \") || title.includes(\"FAQ\") || title.includes(\"tagesschau.de\"))\n        continue;   // skip\n    if (title.startsWith(\"Lokalzeit \") || title.includes(\"WDR aktuell\") || title.includes(\" ich \"))\n        break;  // no more news\n    if (title.includes(\"Fussball\") || title.includes(\"Fußball\") || title.includes(\"Bundesliga\") || title.includes(\"Regionalliga\") || title.includes(\"Spieltag\") || title.includes(\"Sport\"))\n        continue;  // skip\n    text = text.concat(title).concat(\"  +++  \")\n    num++;\n//    msgs.push({\n//        \"topic\": \"ledMatrix/text\", \n//        \"payload\": title\n//    });\n}\ntext = text.replace(\" \", \" \");\nmsgs.push({\n        \"topic\": `ledMatrix/text/${msg.topic}`,\n        \"payload\": text\n    });\nflow.set(\"headlines\", msgs);\n\nreturn msgs;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1060,
+        "y": 500,
+        "wires": [
+            [
+                "4284b11f.f2812"
+            ]
+        ]
+    },
+    {
+        "id": "a0dec78d.cc7bd",
+        "type": "xml",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "property": "payload",
+        "attr": "",
+        "chr": "",
+        "x": 910,
+        "y": 500,
+        "wires": [
+            [
+                "33dd8f8c.8c1238"
+            ]
+        ]
+    },
+    {
+        "id": "6b97b6f9.2f6468",
+        "type": "link out",
+        "z": "cebedba3.f3ea28",
+        "name": "control delay ring",
+        "links": [
+            "52004887.5ae24",
+            "fd6021b7.1de958",
+            "257a7e31.44d1e2",
+            "ed40bb1b.ffa6e8",
+            "d4b48cf7.7f193",
+            "ed13c146.0fbd18"
+        ],
+        "x": 835,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "52004887.5ae24",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 500,
+        "wires": [
+            [
+                "e88563e0.e28218"
+            ]
+        ]
+    },
+    {
+        "id": "fd6021b7.1de958",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 540,
+        "wires": [
+            [
+                "705997f2.8a6558"
+            ]
+        ]
+    },
+    {
+        "id": "257a7e31.44d1e2",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 580,
+        "wires": [
+            [
+                "e19f983e.5d5258"
+            ]
+        ]
+    },
+    {
+        "id": "ed40bb1b.ffa6e8",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 620,
+        "wires": [
+            [
+                "d8ee53b9.4e6e6"
+            ]
+        ]
+    },
+    {
+        "id": "a360f30d.33a3b",
+        "type": "mqtt in",
+        "z": "cebedba3.f3ea28",
+        "name": "MM26",
+        "topic": "#",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "4a8f9596.4cdd74",
+        "x": 350,
+        "y": 100,
+        "wires": [
+            [
+                "db8a67dc.515f48"
+            ]
+        ]
+    },
+    {
+        "id": "db8a67dc.515f48",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "store single value received via MQTT",
+        "func": "\nif (msg.topic == \"meter/elec/pwrTotal\")\n    global.set(\"power\", `Strom: ${parseFloat(msg.payload).toFixed(1)} W`);\n\nif (msg.topic == \"sensor/airq/any/co2_scd30\")\n    global.set(\"co2\", `CO2: ${parseFloat(msg.payload).toFixed(1)} ppm`);\n\nif (msg.topic == \"ttn/dev/sensorsre/node03/c_PM1.0\")\n    global.set(\"pm010\", `PM1.0: ${parseFloat(msg.payload).toFixed(1)} ppm`);\n\nif (msg.topic == \"sensor/airq/any/iaq_bme680\")\n    global.set(\"iaq\", `IAQ: ${parseFloat(msg.payload).toFixed(1)}`);\n\nif (msg.topic == \"meter/elec/pwrTotal\")\n    global.set(\"power\", `Strom: ${parseFloat(msg.payload).toFixed(1)} W`);\n\n/**else if (msg.topic == \"cmnd/DruckerDose/power\" && msg.payload == \"OFF\")\n    global.set(\"printprog\", null);**/\n\nelse return;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 750,
+        "y": 100,
+        "wires": [
+            [
+                "149bebac.68066c"
+            ]
+        ]
+    },
+    {
+        "id": "39667662.97d7da",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble stored info",
+        "func": "\nvar val = \"\";\n\nt = msg.topic;\n\nif (t == \"6\") {\n    val = global.get(\"power\") || \"\";\n} else if (t == \"7\") {\n    co2 = global.get(\"co2\") || \"\";\n    pm010 = global.get(\"pm010\") || \"\";\n    iaq = global.get(\"iaq\") || \"\";\n    val = co2 + \", \" + pm010 + \", \" + iaq;\n} else {\n    val = global.get(t) || \"\";\n}\n\nif (val === \"\") return;\n\ntext = `+++  ${val}  +++`;\n\nmsg.topic = `ledMatrix/text/${msg.topic}`;\nmsg.payload = text;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1080,
+        "y": 700,
+        "wires": [
+            [
+                "4593c2c0.497ffc"
+            ]
+        ]
+    },
+    {
+        "id": "d9eb8338.71c248",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 6",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "6",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 700,
+        "wires": [
+            [
+                "39667662.97d7da"
+            ]
+        ]
+    },
+    {
+        "id": "de74d8b3.5ef1a8",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 130,
+        "y": 700,
+        "wires": [
+            [
+                "d9eb8338.71c248"
+            ]
+        ]
+    },
+    {
+        "id": "d4b48cf7.7f193",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 700,
+        "wires": [
+            [
+                "d9eb8338.71c248"
+            ]
+        ]
+    },
+    {
+        "id": "abc134ae.ca3d4",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 7",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "7",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 740,
+        "wires": [
+            [
+                "39667662.97d7da"
+            ]
+        ]
+    },
+    {
+        "id": "ea2fcdbc.6cd0b",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 130,
+        "y": 740,
+        "wires": [
+            [
+                "abc134ae.ca3d4"
+            ]
+        ]
+    },
+    {
+        "id": "ed13c146.0fbd18",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "6b97b6f9.2f6468",
+            "9335f64f.6fefd8"
+        ],
+        "x": 255,
+        "y": 740,
+        "wires": [
+            [
+                "abc134ae.ca3d4"
+            ]
+        ]
+    },
+    {
+        "id": "40c4c428.84e84c",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "store JSON value received via MQTT",
+        "func": "\nif (msg.topic == \"octoprint/progress/printing\") {\n    global.set(\"printprog\", `3D: ${msg.payload.progress}% ${msg.payload.path.replace('.gcode','')}`);\n}\nelse return;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 750,
+        "y": 140,
+        "wires": [
+            [
+                "149bebac.68066c"
+            ]
+        ]
+    },
+    {
+        "id": "29ba9bdd.8c7614",
+        "type": "json",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 510,
+        "y": 140,
+        "wires": [
+            [
+                "40c4c428.84e84c"
+            ]
+        ]
+    },
+    {
+        "id": "74fe0b70.8ec204",
+        "type": "mqtt in",
+        "z": "cebedba3.f3ea28",
+        "name": "OctoPrint",
+        "topic": "octoprint/#",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "4a8f9596.4cdd74",
+        "x": 360,
+        "y": 140,
+        "wires": [
+            [
+                "29ba9bdd.8c7614"
+            ]
+        ]
+    },
+    {
+        "id": "c41a439e.99a3b",
+        "type": "openweathermap",
+        "z": "cebedba3.f3ea28",
+        "name": "current c3RE weather",
+        "wtype": "current",
+        "lon": "7.169770",
+        "lat": "51.624873",
+        "city": "",
+        "country": "",
+        "language": "de",
+        "x": 700,
+        "y": 620,
+        "wires": [
+            [
+                "f1d286a2.3980b"
+            ]
+        ]
+    },
+    {
+        "id": "f964ea5c.e37e78",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "OWM API key",
+        "info": "xxxx",
+        "x": 890,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "9878de70.e9c0f",
+        "type": "mqtt out",
+        "z": "cebedba3.f3ea28",
+        "name": "→ c3RE",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "1fc8a953.00a93f",
+        "x": 1680,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "4284b11f.f2812",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡ both",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1290,
+        "y": 500,
+        "wires": [
+            [
+                "c1a11e89.30e8a8",
+                "9fed47f7.cfd55"
+            ]
+        ]
+    },
+    {
+        "id": "f1d286a2.3980b",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble weather",
+        "func": "\n\npl = msg.payload;\nsectors = 16;\nwdir = Math.floor((pl.winddirection + (180/sectors)) / (360/sectors));\n//wdirname = [\"N\",\"NO\",\"O\",\"SO\",\"S\",\"SW\",\"W\",\"NW\",\"N\"][wdir];\nwdirname = [\"N\",\"NNO\",\"NO\",\"ONO\",\"O\",\"OSO\",\"SO\",\"SSO\",\"S\",\"SSW\",\"SW\",\"WSW\",\"W\",\"WNW\",\"NW\",\"NNW\",\"N\"][wdir];\n\ntext = text = `+++[${msg.topic}]+++ Wetter in ${pl.location}: ${pl.detail} bei ${pl.tempc}°C, Wind ${(pl.windspeed*3.6).toFixed(1)} km/h aus ${wdirname}.  +++`;\n\nmsg.topic = `ledMatrix/text/${msg.topic}`;\nmsg.payload = text;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1070,
+        "y": 620,
+        "wires": [
+            [
+                "d5c405f9.9b8c58"
+            ]
+        ]
+    },
+    {
+        "id": "149bebac.68066c",
+        "type": "debug",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 1030,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "c7069600.a83fc8",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble fake news",
+        "func": "\nvar msgs = [];\ntext = `+++[${msg.topic}]+++ `.concat(\"News\").concat(\" +++  \");\ntext = text.replace(\"*\",\"*\").replace(\" - Die Nachrichten der ARD\",\"\")\nnum = 0;\n\ntext = text.concat(\"Trump verschanzt sich im Weißen Haus\").concat(\"  +++  \")\ntext = text.concat(\"Corona abgesagt - keine weiteren Infektionen in 2021\").concat(\"  +++  \")\ntext = text.concat(\"Merkel kandidiert erneut als Kanzlerin\").concat(\"  +++  \")\ntext = text.concat(\"Trump erleidet Herzinfarkt\").concat(\"  +++  \")\ntext = text.concat(\"100 € Sachschaden: Einbrecher räumen komplette Primark-Filiale aus\").concat(\"  +++  \")\ntext = text.concat('Spahn: \"Wenn alle zusammenhalten, können wir Corona überstehen, ohne Pflegekräfte besser zu bezahlen\"').concat(\"  +++  \")\ntext = text.concat(\"Katholische Kirche erklärt Selfies zur Sünde\").concat(\"  +++  \")\ntext = text.concat(\"Ab 11. Januar nach Lockdown: allgemeiner Winterschlaf bis April angeordnet\").concat(\"  +++  \")\n\ntext = text.replace(\" \", \" \");\nmsgs.push({\n        \"topic\": \"ledMatrix/text\", \n        \"payload\": text\n    });\nflow.set(\"headlines\", msgs);\n\nreturn msgs;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1080,
+        "y": 460,
+        "wires": [
+            [
+                "4284b11f.f2812"
+            ]
+        ]
+    },
+    {
+        "id": "1c560e52.bc2cb2",
+        "type": "debug",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 1690,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "7c16346f.8b5754",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "0",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 810,
+        "y": 460,
+        "wires": [
+            [
+                "c7069600.a83fc8"
+            ]
+        ]
+    },
+    {
+        "id": "4c8ee403.497b64",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "topic": "ledMatrix/text",
+        "payload": "***",
+        "payloadType": "str",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 1360,
+        "y": 340,
+        "wires": [
+            [
+                "c1a11e89.30e8a8"
+            ]
+        ]
+    },
+    {
+        "id": "c1a11e89.30e8a8",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1530,
+        "y": 340,
+        "wires": [
+            [
+                "9878de70.e9c0f",
+                "56ca1aa8.ec9c5c"
+            ]
+        ]
+    },
+    {
+        "id": "9fed47f7.cfd55",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1530,
+        "y": 840,
+        "wires": [
+            [
+                "ea8d9a9f.5f8b7",
+                "1c560e52.bc2cb2"
+            ]
+        ]
+    },
+    {
+        "id": "348a7348.01b7ac",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "topic": "ledMatrix/text",
+        "payload": "***",
+        "payloadType": "str",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 1340,
+        "y": 840,
+        "wires": [
+            [
+                "9fed47f7.cfd55"
+            ]
+        ]
+    },
+    {
+        "id": "f4c97cdf.4e5218",
+        "type": "mqtt in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "topic": "ledMatrix/#",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "1fc8a953.00a93f",
+        "x": 150,
+        "y": 1160,
+        "wires": [
+            [
+                "220f16aa.62f912"
+            ]
+        ]
+    },
+    {
+        "id": "220f16aa.62f912",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "filter out certain topics",
+        "func": "\nif (msg.topic == \"ledMatrix/status\") return;\n\nif (msg.topic == \"ledMatrix/intensity\") return;\n\nif (msg.topic == \"ledMatrix/delay\") return;\n\nif (msg.topic == \"ledMatrix/channel\") return;\n\nif (msg.topic == \"ledMatrix/text/5\") return;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 360,
+        "y": 1160,
+        "wires": [
+            [
+                "dd2463b.19fa72"
+            ]
+        ]
+    },
+    {
+        "id": "ea8d9a9f.5f8b7",
+        "type": "mqtt out",
+        "z": "cebedba3.f3ea28",
+        "name": "→ Home",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "4a8f9596.4cdd74",
+        "x": 1680,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "fbf1b100.9819b",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 7",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "7",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1020,
+        "y": 1000,
+        "wires": [
+            [
+                "4207c369.d42e44"
+            ]
+        ]
+    },
+    {
+        "id": "230d124a.45369e",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 890,
+        "y": 1000,
+        "wires": [
+            [
+                "fbf1b100.9819b"
+            ]
+        ]
+    },
+    {
+        "id": "bb5a8b3a.4b5418",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "60",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 720,
+        "y": 1000,
+        "wires": [
+            [
+                "fbf1b100.9819b",
+                "f2bbded0.2d4a2"
+            ]
+        ]
+    },
+    {
+        "id": "f2bbded0.2d4a2",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 1000,
+        "wires": [
+            [
+                "bb5a8b3a.4b5418"
+            ]
+        ]
+    },
+    {
+        "id": "4207c369.d42e44",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "assemble stored info",
+        "func": "\n\nt = msg.topic;\n\nval = global.get(t) || \"\";\n\nif (val === \"\") return;\n\ntext = `+++  ${val}  +++`;\n\nmsg.topic = `ledMatrix/text`;   //${msg.topic}`;\nmsg.payload = text;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1220,
+        "y": 1000,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e28c4b44.b0f04",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "START",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 940,
+        "wires": [
+            [
+                "49c7ca3.512b034"
+            ]
+        ]
+    },
+    {
+        "id": "1bfac141.609847",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STOP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 980,
+        "wires": [
+            [
+                "3798a852.f93d6"
+            ]
+        ]
+    },
+    {
+        "id": "3798a852.f93d6",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "reset",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 280,
+        "y": 980,
+        "wires": [
+            [
+                "49c7ca3.512b034"
+            ]
+        ]
+    },
+    {
+        "id": "49c7ca3.512b034",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 430,
+        "y": 1000,
+        "wires": [
+            [
+                "f2bbded0.2d4a2"
+            ]
+        ]
+    },
+    {
+        "id": "a64a366a.e0eaf",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STEP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 1020,
+        "wires": [
+            [
+                "4ebc741d.a3eeb4"
+            ]
+        ]
+    },
+    {
+        "id": "4ebc741d.a3eeb4",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "flush",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 280,
+        "y": 1020,
+        "wires": [
+            [
+                "49c7ca3.512b034"
+            ]
+        ]
+    },
+    {
+        "id": "56ca1aa8.ec9c5c",
+        "type": "debug",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 1690,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "99588967.46bf1",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "special information",
+        "info": "",
+        "x": 110,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "3b8e356f.439d4a",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "global information",
+        "info": "",
+        "x": 110,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "d451f24c.f4a4b8",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "local information",
+        "info": "",
+        "x": 100,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "fd1f4398.982218",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1600,
+        "wires": [
+            [
+                "bf4df305.9c3b88"
+            ]
+        ]
+    },
+    {
+        "id": "636d2315.5f83d4",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 530,
+        "y": 1600,
+        "wires": [
+            [
+                "b96e7f63.47f45"
+            ]
+        ]
+    },
+    {
+        "id": "526e5879.52649",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 530,
+        "y": 1640,
+        "wires": [
+            [
+                "612be7f4.f3edc"
+            ]
+        ]
+    },
+    {
+        "id": "612be7f4.f3edc",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 4",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "4",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1640,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "d14c3cd9.930b28",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1640,
+        "wires": [
+            [
+                "d939ddc4.30ff1"
+            ]
+        ]
+    },
+    {
+        "id": "14ff1521.10c70b",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 5",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "5",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1680,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "b96e7f63.47f45",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 3",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "3",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1600,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "b65b56e2.649a6",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1680,
+        "wires": [
+            [
+                "6d6fe4bd.f6b0a4"
+            ]
+        ]
+    },
+    {
+        "id": "2ac775f4.d51d8a",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 530,
+        "y": 1560,
+        "wires": [
+            [
+                "a85e1904.d75dc8"
+            ]
+        ]
+    },
+    {
+        "id": "2f30136.2aafeec",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1600,
+        "wires": [
+            [
+                "fd1f4398.982218",
+                "b96e7f63.47f45"
+            ]
+        ]
+    },
+    {
+        "id": "bf4df305.9c3b88",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1640,
+        "wires": [
+            [
+                "d14c3cd9.930b28",
+                "612be7f4.f3edc"
+            ]
+        ]
+    },
+    {
+        "id": "d939ddc4.30ff1",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1680,
+        "wires": [
+            [
+                "b65b56e2.649a6",
+                "14ff1521.10c70b"
+            ]
+        ]
+    },
+    {
+        "id": "9914050e.b031b",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 530,
+        "y": 1680,
+        "wires": [
+            [
+                "14ff1521.10c70b"
+            ]
+        ]
+    },
+    {
+        "id": "9d57c865.9b5308",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1560,
+        "wires": [
+            [
+                "a85e1904.d75dc8",
+                "7c4d9438.1c7794"
+            ]
+        ]
+    },
+    {
+        "id": "7c4d9438.1c7794",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1560,
+        "wires": [
+            [
+                "2f30136.2aafeec"
+            ]
+        ]
+    },
+    {
+        "id": "a85e1904.d75dc8",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 2",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "2",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1560,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "c76ade3f.225e2",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1560,
+        "wires": [
+            [
+                "7c4d9438.1c7794"
+            ]
+        ]
+    },
+    {
+        "id": "9bcbf571.a491",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1600,
+        "wires": [
+            [
+                "fd1f4398.982218"
+            ]
+        ]
+    },
+    {
+        "id": "fcd5a7fc.51e62",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1640,
+        "wires": [
+            [
+                "d14c3cd9.930b28"
+            ]
+        ]
+    },
+    {
+        "id": "bf8c8d60.8153b",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1680,
+        "wires": [
+            [
+                "b65b56e2.649a6"
+            ]
+        ]
+    },
+    {
+        "id": "c1377cf6.9d5e28",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 6",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "6",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1720,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "b1c941eb.a36d78",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1720,
+        "wires": [
+            [
+                "3f54e199.d1e57e"
+            ]
+        ]
+    },
+    {
+        "id": "6d6fe4bd.f6b0a4",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1720,
+        "wires": [
+            [
+                "b1c941eb.a36d78",
+                "c1377cf6.9d5e28"
+            ]
+        ]
+    },
+    {
+        "id": "316b0dfb.75a00a",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 530,
+        "y": 1720,
+        "wires": [
+            [
+                "c1377cf6.9d5e28"
+            ]
+        ]
+    },
+    {
+        "id": "d8b275f6.1f7e18",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1720,
+        "wires": [
+            [
+                "b1c941eb.a36d78"
+            ]
+        ]
+    },
+    {
+        "id": "a4fd79b9.92c09",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "Topic := 7",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "7",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 1760,
+        "wires": [
+            [
+                "c84ad8eb.54af68"
+            ]
+        ]
+    },
+    {
+        "id": "400f1d2e.550194",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 280,
+        "y": 1760,
+        "wires": [
+            [
+                "9d57c865.9b5308"
+            ]
+        ]
+    },
+    {
+        "id": "3f54e199.d1e57e",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 1760,
+        "wires": [
+            [
+                "400f1d2e.550194",
+                "a4fd79b9.92c09"
+            ]
+        ]
+    },
+    {
+        "id": "641f3d74.9d8b94",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "TRIG",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "x": 530,
+        "y": 1760,
+        "wires": [
+            [
+                "a4fd79b9.92c09"
+            ]
+        ]
+    },
+    {
+        "id": "201f46f0.2a751a",
+        "type": "link in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "links": [
+            "995482bc.2b74f8",
+            "9335f64f.6fefd8"
+        ],
+        "x": 155,
+        "y": 1760,
+        "wires": [
+            [
+                "400f1d2e.550194"
+            ]
+        ]
+    },
+    {
+        "id": "995482bc.2b74f8",
+        "type": "link out",
+        "z": "cebedba3.f3ea28",
+        "name": "control delay ring",
+        "links": [
+            "c76ade3f.225e2",
+            "9bcbf571.a491",
+            "fcd5a7fc.51e62",
+            "bf8c8d60.8153b",
+            "d8b275f6.1f7e18",
+            "201f46f0.2a751a"
+        ],
+        "x": 755,
+        "y": 1460,
+        "wires": []
+    },
+    {
+        "id": "92f28cb4.7719d8",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 670,
+        "y": 1460,
+        "wires": [
+            [
+                "995482bc.2b74f8"
+            ]
+        ]
+    },
+    {
+        "id": "e5546c3c.8860d",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "reset",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 500,
+        "y": 1440,
+        "wires": [
+            [
+                "92f28cb4.7719d8"
+            ]
+        ]
+    },
+    {
+        "id": "63f8ecbd.570a84",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "flush",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 500,
+        "y": 1480,
+        "wires": [
+            [
+                "92f28cb4.7719d8"
+            ]
+        ]
+    },
+    {
+        "id": "5bbb72db.0aa324",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "START",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 1400,
+        "wires": [
+            [
+                "7d92537.a3480ac"
+            ]
+        ]
+    },
+    {
+        "id": "d5411f5c.22f89",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STOP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 1440,
+        "wires": [
+            [
+                "e9f752be.8b1998"
+            ]
+        ]
+    },
+    {
+        "id": "15748f43.5d8a69",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STEP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 1480,
+        "wires": [
+            [
+                "cc13a2a9.d4ae7"
+            ]
+        ]
+    },
+    {
+        "id": "9ed756ca.a1295",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "UI",
+        "info": "",
+        "x": 70,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "d16a0009.4ec3",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "connect c3RE → home",
+        "info": "",
+        "x": 120,
+        "y": 1120,
+        "wires": []
+    },
+    {
+        "id": "fb9f70d0.ed07c",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "refresh",
+        "info": "",
+        "x": 70,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "64fa3a47.07bd54",
+        "type": "delay",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "60",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 720,
+        "y": 280,
+        "wires": [
+            [
+                "9e060bbe.c74c18",
+                "6b97b6f9.2f6468"
+            ]
+        ]
+    },
+    {
+        "id": "9e060bbe.c74c18",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 570,
+        "y": 280,
+        "wires": [
+            [
+                "64fa3a47.07bd54"
+            ]
+        ]
+    },
+    {
+        "id": "532bf271.09f354",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "START",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 220,
+        "wires": [
+            [
+                "842dbe89.bae108"
+            ]
+        ]
+    },
+    {
+        "id": "91fe1db3.b1bc",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STOP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 260,
+        "wires": [
+            [
+                "d986a1bb.2c39"
+            ]
+        ]
+    },
+    {
+        "id": "d986a1bb.2c39",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "reset",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 280,
+        "y": 260,
+        "wires": [
+            [
+                "842dbe89.bae108"
+            ]
+        ]
+    },
+    {
+        "id": "842dbe89.bae108",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 430,
+        "y": 280,
+        "wires": [
+            [
+                "9e060bbe.c74c18"
+            ]
+        ]
+    },
+    {
+        "id": "c4295dd2.934758",
+        "type": "inject",
+        "z": "cebedba3.f3ea28",
+        "name": "STEP",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 130,
+        "y": 300,
+        "wires": [
+            [
+                "e004b60f.0317d"
+            ]
+        ]
+    },
+    {
+        "id": "e004b60f.0317d",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "flush",
+                "pt": "msg",
+                "to": "1",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 280,
+        "y": 300,
+        "wires": [
+            [
+                "842dbe89.bae108"
+            ]
+        ]
+    },
+    {
+        "id": "4593c2c0.497ffc",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡ only local",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1310,
+        "y": 660,
+        "wires": [
+            [
+                "9fed47f7.cfd55"
+            ]
+        ]
+    },
+    {
+        "id": "d5c405f9.9b8c58",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡ only global",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1310,
+        "y": 580,
+        "wires": [
+            [
+                "c1a11e89.30e8a8"
+            ]
+        ]
+    },
+    {
+        "id": "a8eca210.842ff8",
+        "type": "comment",
+        "z": "cebedba3.f3ea28",
+        "name": "<< currently unused",
+        "info": "",
+        "x": 1430,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "95ecc860.71ded",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "get stored value",
+        "func": "\nmsg.payload = flow.get(`uimarquee_${msg.topic}`) || `[${msg.topic}]...`;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1040,
+        "y": 1560,
+        "wires": [
+            [
+                "f6edb468.b587c8"
+            ]
+        ]
+    },
+    {
+        "id": "c84ad8eb.54af68",
+        "type": "change",
+        "z": "cebedba3.f3ea28",
+        "name": " ≡",
+        "rules": [],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 870,
+        "y": 1560,
+        "wires": [
+            [
+                "95ecc860.71ded"
+            ]
+        ]
+    },
+    {
+        "id": "f6edb468.b587c8",
+        "type": "ui_text",
+        "z": "cebedba3.f3ea28",
+        "group": "7eddd0b5.69293",
+        "order": 1,
+        "width": 12,
+        "height": 9,
+        "name": "",
+        "label": "{{msg.topic}}",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "x": 1210,
+        "y": 1560,
+        "wires": []
+    },
+    {
+        "id": "7d92537.a3480ac",
+        "type": "ui_button",
+        "z": "cebedba3.f3ea28",
+        "name": "start button",
+        "group": "7eddd0b5.69293",
+        "order": 2,
+        "width": 4,
+        "height": 1,
+        "passthru": true,
+        "label": "start",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "",
+        "x": 290,
+        "y": 1400,
+        "wires": [
+            [
+                "9d57c865.9b5308"
+            ]
+        ]
+    },
+    {
+        "id": "e9f752be.8b1998",
+        "type": "ui_button",
+        "z": "cebedba3.f3ea28",
+        "name": "stop button",
+        "group": "7eddd0b5.69293",
+        "order": 6,
+        "width": 4,
+        "height": 1,
+        "passthru": true,
+        "label": "stop",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "",
+        "x": 290,
+        "y": 1440,
+        "wires": [
+            [
+                "e5546c3c.8860d"
+            ]
+        ]
+    },
+    {
+        "id": "cc13a2a9.d4ae7",
+        "type": "ui_button",
+        "z": "cebedba3.f3ea28",
+        "name": "step button",
+        "group": "7eddd0b5.69293",
+        "order": 4,
+        "width": 2,
+        "height": 1,
+        "passthru": true,
+        "label": "step",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "",
+        "x": 290,
+        "y": 1480,
+        "wires": [
+            [
+                "63f8ecbd.570a84"
+            ]
+        ]
+    },
+    {
+        "id": "34ebd1c6.9760fe",
+        "type": "mqtt in",
+        "z": "cebedba3.f3ea28",
+        "name": "",
+        "topic": "ledMatrix/text/#",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "4a8f9596.4cdd74",
+        "x": 160,
+        "y": 1320,
+        "wires": [
+            [
+                "2bdb30e5.700c48"
+            ]
+        ]
+    },
+    {
+        "id": "2bdb30e5.700c48",
+        "type": "function",
+        "z": "cebedba3.f3ea28",
+        "name": "store value",
+        "func": "\nmsg.topic = msg.topic.replace(\"ledMatrix/text/\", \"uimarquee_\");\n\nflow.set(msg.topic, msg.payload);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 350,
+        "y": 1320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7cc428db.629df",
+        "type": "ui_text_input",
+        "z": "cebedba3.f3ea28",
+        "name": "Channel(s)",
+        "label": "",
+        "tooltip": "",
+        "group": "48e68465.bfcf0c",
+        "order": 1,
+        "width": 6,
+        "height": 1,
+        "passthru": true,
+        "mode": "text",
+        "delay": 300,
+        "topic": "channel",
+        "x": 290,
+        "y": 1860,
+        "wires": [
+            [
+                "3490f20c.2aecbe"
+            ]
+        ]
+    },
+    {
+        "id": "3490f20c.2aecbe",
+        "type": "mqtt out",
+        "z": "cebedba3.f3ea28",
+        "name": "→ Home ledMatrix/channel",
+        "topic": "ledMatrix/channel",
+        "qos": "",
+        "retain": "",
+        "broker": "4a8f9596.4cdd74",
+        "x": 580,
+        "y": 1860,
+        "wires": []
+    },
+    {
+        "id": "4a8f9596.4cdd74",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "dave",
+        "broker": "dave",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeRetain": "false",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": ""
+    },
+    {
+        "id": "1fc8a953.00a93f",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "c3RE",
+        "broker": "c3re.de",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": ""
+    },
+    {
+        "id": "7eddd0b5.69293",
+        "type": "ui_group",
+        "z": "",
+        "name": "Local Display",
+        "tab": "b108c526.4e2e58",
+        "order": 2,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "48e68465.bfcf0c",
+        "type": "ui_group",
+        "z": "",
+        "name": "MarQueTTino Control",
+        "tab": "b108c526.4e2e58",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "b108c526.4e2e58",
+        "type": "ui_tab",
+        "z": "",
+        "name": "Marquee",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
